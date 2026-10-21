@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>X帖子钩子生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+--bg:#f3f1ec;
+--surface:#fffdf8;
+--surface-2:#ece8dd;
+--ink:#1c1a16;
+--muted:#6d675c;
+--line:#ddd6c6;
+--accent:#e8490f;
+--accent-strong:#c93a08;
+--accent-soft:#fbe9df;
+--teal:#0e6e5c;
+--teal-soft:#e0efea;
+--gold:#b07d10;
+--gold-soft:#f5ecd2;
+--shadow:0 1px 2px rgba(28,26,22,.06),0 10px 30px -18px rgba(28,26,22,.35);
+--radius:14px;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#131417;
+--surface:#1b1d21;
+--surface-2:#24262b;
+--ink:#f0ede6;
+--muted:#a49e92;
+--line:#33353b;
+--accent:#ff6a33;
+--accent-strong:#ff8252;
+--accent-soft:#3a2318;
+--teal:#4cc2ab;
+--teal-soft:#17352e;
+--gold:#e0aa3e;
+--gold-soft:#38300f;
+--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -18px rgba(0,0,0,.7);
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+margin:0;background:var(--bg);color:var(--ink);
+font-family:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+line-height:1.6;
+}
+.wrap{max-width:1060px;margin:0 auto;padding:22px 16px 48px}
+.kicker{
+display:inline-flex;align-items:center;gap:8px;
+font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);
+text-transform:uppercase;
+}
+.kicker::before{content:"";width:22px;height:2px;background:var(--accent)}
+h1{
+font-family:"Noto Serif SC",serif;font-weight:900;
+font-size:clamp(30px,6vw,44px);line-height:1.15;margin:8px 0 6px;
+}
+.lede{margin:0;color:var(--muted);font-size:15px;max-width:660px}
+.howto{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.howto span{
+font-size:12.5px;font-weight:500;color:var(--muted);
+border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface);
+}
+.howto b{color:var(--accent);font-weight:900;margin-right:4px}
+.grid{display:grid;grid-template-columns:1fr;gap:18px;margin-top:18px}
+.grid>*{min-width:0}
+@media (min-width:880px){.grid{grid-template-columns:400px 1fr;align-items:start}}
+.card{
+background:var(--surface);border:1px solid var(--line);
+border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;
+}
+.card h2{font-size:15px;font-weight:900;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.card h2.no{
+font-size:11px;font-weight:900;color:#fff;background:var(--ink);
+width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+@media (prefers-color-scheme: dark){.card h2.no{background:var(--accent);color:#16130f}}
+.field{margin-bottom:16px;min-width:0}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+.field.hint{font-size:12px;color:var(--muted);margin-top:6px}
+input[type=text],textarea,select{
+width:100%;max-width:100%;min-width:0;font:inherit;font-size:15px;color:var(--ink);
+background:var(--bg);border:1px solid var(--line);border-radius:10px;
+padding:10px 12px;outline:none;
+}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:118px;line-height:1.7}
+select{appearance:none;-webkit-appearance:none;cursor:pointer}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{
+font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;
+border:1px solid var(--line);background:var(--bg);color:var(--ink);
+border-radius:999px;padding:7px 14px;transition:border-color.15s,background.15s,color.15s;
+}
+.seg button:hover{border-color:var(--accent)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+@media (prefers-color-scheme: dark){
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#16130f}
+}
+.seg button:focus-visible,.btn:focus-visible,.hook-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ---------- hook cards ---------- */
+.out-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.out-head h2{margin:0}
+.out-sub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.hooks{display:flex;flex-direction:column;gap:12px}
+.hook-card{
+border:1px solid var(--line);border-radius:12px;background:var(--bg);
+padding:14px 16px;cursor:pointer;transition:border-color.15s,box-shadow.15s;
+}
+.hook-card:hover{border-color:var(--accent)}
+.hook-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--surface)}
+.hook-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px}
+.hook-name{font-size:14px;font-weight:900}
+.hook-formula{font-size:12px;color:var(--muted)}
+.hook-badge{
+margin-left:auto;font-size:11px;font-weight:900;color:var(--accent);
+background:var(--accent-soft);border-radius:999px;padding:2px 9px;flex:none;
+}
+.hook-badge[hidden]{display:none}
+.hook-text{
+margin:0;font-size:15px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.hook-text.hl{font-weight:900}
+.hook-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:11px}
+.chip{
+font-size:11.5px;font-weight:500;color:var(--muted);
+border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:var(--surface);
+}
+.chip.on{color:var(--teal);border-color:var(--teal);background:var(--teal-soft);font-weight:700}
+.chip.warn{color:var(--gold);border-color:var(--gold);background:var(--gold-soft);font-weight:700}
+.hook-actions{margin-left:auto;display:flex;gap:8px}
+.mini-btn{
+font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+border:1px solid var(--line);background:var(--surface);color:var(--ink);
+border-radius:8px;padding:5px 12px;
+}
+.mini-btn:hover{border-color:var(--accent);color:var(--accent)}
+.mini-btn:active{transform:scale(.96)}
+/* ---------- actions / note ---------- */
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{
+font:inherit;font-size:14px;font-weight:700;cursor:pointer;
+border-radius:10px;padding:11px 18px;border:1px solid var(--line);
+background:var(--surface);color:var(--ink);transition:transform.1s,background.15s,border-color.15s;
+}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-strong)}
+.note{font-size:12.5px;color:var(--muted);margin-top:14px}
+.note b{color:var(--ink)}
+/* ---------- preview zone ---------- */
+.zone{margin-top:18px}
+.pv-grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:880px){.pv-grid{grid-template-columns:1fr 1fr;align-items:start}}
+.tweet{
+border:1px solid var(--line);border-radius:12px;background:var(--surface);
+padding:14px 16px 10px;
+}
+.tw-head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.avatar{
+flex:none;width:42px;height:42px;border-radius:50%;
+background:var(--accent-soft);color:var(--accent);
+display:flex;align-items:center;justify-content:center;
+font-family:"Noto Serif SC",serif;font-weight:900;font-size:20px;
+}
+.tw-name{font-size:14.5px;font-weight:900;line-height:1.3}
+.tw-handle{font-size:12.5px;color:var(--muted);line-height:1.3}
+.tw-body{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.tw-foot{
+display:flex;justify-content:space-between;max-width:340px;
+margin-top:10px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);
+}
+.tw-foot svg{width:17px;height:17px;display:block}
+.comment-box{
+background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:14px 16px;
+}
+.comment-box h3,.check-box h3{font-size:13px;font-weight:900;margin:0 0 10px}
+.comment-text{margin:0;font-size:14.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.check-box{margin-top:18px}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.checks li{display:flex;gap:10px;font-size:13.5px;line-height:1.55;align-items:flex-start}
+.ck{
+flex:none;width:20px;height:20px;border-radius:50%;margin-top:1px;
+display:inline-flex;align-items:center;justify-content:center;
+font-size:12px;font-weight:900;
+}
+.ck.ok{background:var(--teal-soft);color:var(--teal)}
+.ck.warn{background:var(--gold-soft);color:var(--gold)}
+.checks li span:last-child{min-width:0}
+.checks b{font-weight:900}
+.toast{
+position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+background:var(--ink);color:var(--bg);font-size:14px;font-weight:700;
+padding:11px 22px;border-radius:999px;opacity:0;pointer-events:none;
+transition:opacity.25s,transform.25s;z-index:60;box-shadow:var(--shadow);
+max-width:calc(100vw - 32px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){
+.btn,.toast,.hook-card{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="kicker">Q工坊工具箱 · 第 3 件</span>
+<h1>X 帖子钩子生成器</h1>
+<p class="lede">同一份内容，换个开头就是两种命运。填主题和要点，一次生成 6 种钩子结构的完整帖子——痛点、数字、反差、悬念、结论、提问，挑最抓人的一条发。</p>
+<div class="howto" aria-hidden="true">
+<span><b>1</b>填主题、要点、关键数字</span>
+<span><b>2</b>挑一条钩子帖</span>
+<span><b>3</b>复制正文 + 评论区第一条</span>
+</div>
+
+<div class="grid">
+<!-- ============ 控制面板 ============ -->
+<section class="card" aria-label="帖子设置">
+<h2><span class="no">1</span>这条帖子讲什么</h2>
+
+<div class="field">
+<label for="topic">主题短语（会被套进钩子句式，写短一点）</label>
+<input type="text" id="topic" autocomplete="off" />
+<p class="hint">例：「做短视频写稿」「用 AI 做小工具」「在 X 上起号」。一句话的主题说明写在要点第一条里。</p>
+</div>
+
+<div class="field">
+<label for="fact">关键数字 / 结果（选填，数字型和悬念型钩子靠它）</label>
+<input type="text" id="fact" autocomplete="off" />
+<p class="hint">例：「3 秒生成 3 版稿」「390 粉，离目标还差 110」。必须是真实数字——编的数据被扒出来，号就废了。</p>
+</div>
+
+<div class="field">
+<label for="points">要点（你想说的真话，一行一条）</label>
+<textarea id="points" spellcheck="false"></textarea>
+<p class="hint">要点全部来自你自己，生成器只负责把它们套进钩子结构、排好顺序。缺的料会标「待补」，不会替你编。</p>
+</div>
+
+<div class="field">
+<label>帖子类型</label>
+<div class="seg" id="typeSeg" role="group" aria-label="帖子类型"></div>
+</div>
+
+<div class="field">
+<label for="ending">结尾引导</label>
+<select id="ending"></select>
+<p class="hint">X 的排序最看重回复：结尾留一个能让人接话的口子，比什么都管用。</p>
+</div>
+</section>
+
+<!-- ============ 钩子输出 ============ -->
+<section class="card" aria-label="生成的钩子帖">
+<div class="out-head">
+<h2><span class="no">2</span>六种钩子，挑一条</h2>
+<button class="btn" id="btnRegen" type="button">换一批句式</button>
+</div>
+<p class="out-sub">点任意一条选中它，下面的预览和评论区第一条会跟着换。字数按 X 的加权规则算：中文 1 字算 2，普通帖上限 280。</p>
+<div class="hooks" id="hooks" aria-live="polite"></div>
+<div class="actions">
+<button class="btn primary" id="btnCopyPost" type="button">复制选中帖子</button>
+<button class="btn" id="btnDownload" type="button">下载全部 6 条.txt</button>
+</div>
+<p class="note"><b>发之前改两处：</b>把带「待补」的地方换成你的真实数字和链接；再把第一句大声读一遍——读着不像你说话，就按你的口气改，钩子是骨架，声音得是你的。</p>
+</section>
+</div>
+
+<!-- ============ 预览区 ============ -->
+<div class="card zone" aria-label="发布预览">
+<h2><span class="no">3</span>发布预览</h2>
+<div class="pv-grid">
+<div>
+<div class="tweet" aria-label="帖子效果预览">
+<div class="tw-head">
+<div class="avatar" aria-hidden="true">Q</div>
+<div>
+<div class="tw-name">Q工坊 | AI一人公司</div>
+<div class="tw-handle">@QGongfang · 刚刚</div>
+</div>
+</div>
+<p class="tw-body" id="pvBody"></p>
+<div class="tw-foot" aria-hidden="true">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+</div>
+</div>
+<p class="note">信息流里读者只看前两三行就决定划不划走——预览里第一句要是立不住，换一条钩子。</p>
+</div>
+<div>
+<div class="comment-box">
+<h3>评论区第一条（发完帖立刻自己贴上）</h3>
+<p class="comment-text" id="pvComment"></p>
+<div class="actions">
+<button class="btn" id="btnCopyComment" type="button">复制评论区第一条</button>
+</div>
+</div>
+<div class="check-box">
+<h3>发布前自检（按选中帖子实时算）</h3>
+<ul class="checks" id="checks"></ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id);};
+
+/* ================= 工具函数 ================= */
+function stripEnd(s){ return s.replace(/[。！？!?；;，,、\s]+$/,"");}
+function withEnd(s){ return /[。！？!?]$/.test(s)? s: s + "。";}
+function esc(s){
+return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+/* X 加权字数：URL 按 23 计；CJK 及全角字符、emoji 按 2 计；其余按 1 计 */
+function isWide(cp){
+return (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x2E80 && cp <= 0xA4CF) ||
+(cp >= 0xAC00 && cp <= 0xD7A3) || (cp >= 0xF900 && cp <= 0xFAFF) ||
+(cp >= 0xFE30 && cp <= 0xFE4F) || (cp >= 0xFF00 && cp <= 0xFF60) ||
+(cp >= 0xFFE0 && cp <= 0xFFE6) || cp >= 0x1F000;
+}
+function xWeight(text){
+var urls = text.match(/https?:\/\/\S+/g);
+var n = urls? urls.length * 23: 0;
+var t = text.replace(/https?:\/\/\S+/g, "");
+for (var i = 0; i < t.length; i++){
+var cp = t.codePointAt(i);
+n += isWide(cp)? 2: 1;
+if (cp > 0xFFFF) i++;
+}
+return n;
+}
+
+/* ================= 模板库 =================
+诚实边界：钩子只提供句式骨架；数字、经历、结论全部来自用户输入，
+没填的地方一律标「待补」，绝不编造。 */
+
+var PTYPES = {
+tool: { name:"工具发布", intro:"我给自己做了个工具，解决的就是这个问题："},
+record: { name:"项目记录", intro:"把今天的进展完整记下来："},
+teach: { name:"干货教学", intro:"方法不复杂，拆开就这几步："},
+opinion: { name:"观点输出", intro:"为什么我这么判断？理由摆出来："},
+review: { name:"踩坑复盘", intro:"坑我都踩过了，一个个说清楚："},
+translate: { name:"X冲浪翻译", intro:"原帖的核心意思，我翻译给你："}
+};
+
+var COMMENTS = {
+tool: "工具地址：「待补：粘贴工具链接」\n纯前端小工具，打开就用，不用注册、不用下载。用着有问题在这条下面问我，我挨个回。",
+record: "补充一句：这个系列我会一直更，完整记录都在主页置顶那条。想跟上进度的，关注一下，别走丢。",
+teach: "补充资料：「待补：链接或领取关键词」。照着做卡在哪一步，直接在这条下面问，我看到就回。",
+opinion: "先声明：观点是我的，依据都在正文里。欢迎摆事实反驳，纯杠的请绕道。",
+review: "补充：这些坑我踩的顺序和代价都是真的，你避开就行，不用再交一次学费。",
+translate: "原帖地址：「待补：粘贴原帖链接」。翻译有不准的地方，懂行的朋友在评论区指正。"
+};
+
+var ENDINGS = {
+replies: { name:"提问收尾（求回复）", text:"你那边是什么情况？评论区聊聊，我每条都看。"},
+next: { name:"预告收尾（求关注）", text:"这是这个系列的第「待补：几」篇，明天继续。关注我，别走丢。"},
+linkc: { name:"评论区收尾（放链接）", text:"东西在评论区👇 免费，不用注册，拿走直接用。"},
+none: { name:"不加收尾", text:""}
+};
+
+/* 六种钩子：name 名称，formula 公式说明，variants 三套句式（T=主题，P=要点数组，F=关键数字） */
+var HOOKS = [
+{ key:"pain", name:"痛点型", formula:"人群痛点 + 卡点前置，先戳疼再给药",
+variants:[
+function(T,P,F){ return "「待补：真实比例，如 90%」的人，都死在" + T + "的第一步。";},
+function(T,P,F){ return T + "，最难的从来不是技术，是开始之前的那阵卡壳。";},
+function(T,P,F){ return "别再硬扛了：" + T + "这件事，卡住你的根本不是能力。";}
+]},
+{ key:"number", name:"数字型", formula:"具体数字 + 结果前置，数字是最便宜的可信度",
+variants:[
+function(T,P,F){ return F + "。这是我今天交出的成绩单。";},
+function(T,P,F){ return "先上数字：" + F + "。下面说怎么做到的。";},
+function(T,P,F){ return "算一笔账：" + F + "。";}
+]},
+{ key:"contrast", name:"反差型", formula:"弱势身份 + 意想不到的结果，反差越大越想点",
+variants:[
+function(T,P,F){ return "我不会写一行代码。但" + T + "这件事，我做成了。";},
+function(T,P,F){ return "一个普通人 + AI，能走多远？今天这条，就是答案的一部分。";},
+function(T,P,F){ return "没团队、没预算、没技术背景。" + T + "，照样往前推进。";}
+]},
+{ key:"suspense", name:"悬念型", formula:"结果先行 + 关键信息扣住，逼人读到最后",
+variants:[
+function(T,P,F){ return "先说结果：" + F + "。但过程里有个关键转折，看完再下结论。";},
+function(T,P,F){ return "这条我想了想，还是决定发出来——因为结论，可能会颠覆你对" + T + "的看法。";},
+function(T,P,F){ return T + "这件事，我原本以为会翻车。结果……";}
+]},
+{ key:"claim", name:"结论型", formula:"观点放第一句 + 不服来辩，天生招回复",
+variants:[
+function(T,P,F){ return "先把结论放前面：" + P[0] + "。不认同的，看完再喷。";},
+function(T,P,F){ return "关于" + T + "，我的判断很明确：" + P[0] + "。";},
+function(T,P,F){ return "说句可能得罪人的话：" + P[0] + "。";}
+]},
+{ key:"question", name:"提问型", formula:"抛问题 + 先交代自己，回答欲是这样勾出来的",
+variants:[
+function(T,P,F){ return T + "，你们最卡的是哪一步？先说我的：" + P[0] + "。";},
+function(T,P,F){ return "想问问大家：" + T + "，你们都是怎么解决的？";},
+function(T,P,F){ return "有没有人和我一样，" + T + "的时候，第一步就卡住了？";}
+]}
+];
+
+/* ================= 状态与默认值 ================= */
+var DEFAULTS = {
+topic: "用 AI 做小工具",
+fact: "3 秒生成 3 版口播稿",
+points: [
+"我做了个口播稿生成器，专治想拍视频但不会写稿",
+"填主题、贴要点，钩子、结构、结尾全排好",
+"还自带提词器，写完架起手机就能录",
+"它有个老实的设计：不替你编经历，缺料只标「待补」",
+"AI 该放大你的真实，而不是编造你的真实"
+].join("\n"),
+ptype: "tool",
+ending: "linkc"
+};
+
+var state = {
+topic: DEFAULTS.topic,
+fact: DEFAULTS.fact,
+pointsText: DEFAULTS.points,
+ptype: DEFAULTS.ptype,
+ending: DEFAULTS.ending,
+seed: 0,
+selected: 0,
+posts: []
+};
+
+/* ================= 生成逻辑 ================= */
+function parsePoints(){
+return state.pointsText.split(/\n+/).map(function(s){ return s.trim();}).filter(Boolean);
+}
+function buildPost(hookDef){
+var T = state.topic.trim() || "「待补：主题短语」";
+var raw = parsePoints();
+var P = raw.length? raw.map(stripEnd): ["「待补：在左边一行一条写下你想讲的要点」"];
+var F = state.fact.trim() || "「待补：填一个真实数字，比如用时、成本或结果」";
+var v = hookDef.variants[state.seed % hookDef.variants.length];
+var hookLine = v(T, P, F);
+if (!/[。！？!?……]$/.test(hookLine)) hookLine += "。";
+
+var parts = [hookLine, "", PTYPES[state.ptype].intro];
+raw.forEach(function(p, i){
+if (state.ptype === "teach"){
+parts.push((i + 1) + ". " + withEnd(p));
+} else {
+parts.push(withEnd(p));
+}
+});
+if (!raw.length) parts.push("「待补：要点会排在这里」");
+var end = ENDINGS[state.ending].text;
+if (end){ parts.push("", end);}
+return parts.join("\n");
+}
+function generate(){
+state.posts = HOOKS.map(function(h){ return buildPost(h);});
+}
+
+/* 结构自检 chips：只看句式元素，不预测流量 */
+function postChips(text){
+var firstLine = text.split("\n")[0];
+return {
+weight: xWeight(text),
+hasNumber: /\d/.test(firstLine),
+hasQuestion: /[？?]/.test(firstLine),
+hasContrast: /(但|却|没|不会|不是|死在|卡)/.test(firstLine),
+firstWeight: xWeight(firstLine)
+};
+}
+
+/* ================= 渲染：钩子卡片 ================= */
+function renderHooks(){
+generate();
+var box = $("hooks");
+box.innerHTML = HOOKS.map(function(h, i){
+var c = postChips(state.posts[i]);
+var chips = "";
+chips += '<span class="chip ' + (c.weight > 280? "warn": "on") + '">加权 ' + c.weight + " / 280</span>";
+chips += '<span class="chip ' + (c.hasNumber? "on": "") + '">首行' + (c.hasNumber? "有": "无") + "数字</span>";
+chips += '<span class="chip ' + (c.hasQuestion? "on": "") + '">' + (c.hasQuestion? "带提问": "无提问") + "</span>";
+chips += '<span class="chip ' + (c.hasContrast? "on": "") + '">' + (c.hasContrast? "有反差词": "无反差词") + "</span>";
+var text = state.posts[i];
+var nl = text.indexOf("\n");
+var first = nl < 0? text: text.slice(0, nl);
+var rest = nl < 0? "": text.slice(nl);
+return '<article class="hook-card' + (i === state.selected? " selected": "") + '" data-i="' + i + '" tabindex="0" role="button" aria-pressed="' + (i === state.selected) + '">' +
+'<div class="hook-top"><span class="hook-name">' + h.name + '</span>' +
+'<span class="hook-formula">' + h.formula + '</span>' +
+'<span class="hook-badge" ' + (i === state.selected? "": "hidden") + '>已选中</span></div>' +
+'<p class="hook-text"><span class="hl">' + esc(first) + "</span>" + esc(rest) + "</p>" +
+'<div class="hook-meta">' + chips +
+'<span class="hook-actions"><button class="mini-btn" type="button" data-copy="' + i + '">复制这条</button></span></div>' +
+"</article>";
+}).join("");
+renderPreview();
+}
+
+/* ================= 渲染：预览 + 评论 + 自检 ================= */
+function renderPreview(){
+var text = state.posts[state.selected] || "";
+$("pvBody").textContent = text;
+var comment = COMMENTS[state.ptype];
+$("pvComment").textContent = comment;
+
+var c = postChips(text);
+var firstLine = text.split("\n")[0];
+var hasLink = /https?:\/\//.test(text);
+var hookStrong = c.hasNumber || c.hasQuestion || c.hasContrast;
+var endText = ENDINGS[state.ending].text;
+var rows = [];
+
+rows.push({
+ok:!hasLink,
+html: hasLink
+? "<b>正文里有链接。</b>X 会压带外链帖子的流量，把链接挪到评论区第一条。"
+: "<b>正文无外链。</b>链接放评论区第一条，正文保持干净。"
+});
+rows.push({
+ok: c.weight <= 280,
+html: c.weight <= 280
+? "<b>加权字数 " + c.weight + "，在 280 以内。</b>普通帖直接能发。"
+: "<b>加权字数 " + c.weight + "，超出 280。</b>Premium 长帖能发，但钩子必须在前 280 字内立住——你这条首行 " + c.firstWeight + " 字，没问题。"
+});
+rows.push({
+ok: hookStrong,
+html: hookStrong
+? "<b>首行有钩子元素</b>（" + [c.hasNumber && "数字", c.hasQuestion && "提问", c.hasContrast && "反差"].filter(Boolean).join(" / ") + "）。信息流里第一眼就抓得住。"
+: "<b>首行偏平。</b>没数字、没提问、没反差——点「换一批句式」或换一种钩子类型。"
+});
+rows.push({
+ok:!!endText && /[？?]|评论区|关注/.test(text),
+html: endText
+? "<b>结尾留了互动口子。</b>发完第一小时守在评论区，谁回复你就接谁的话——回复量是 X 排序的硬通货。"
+: "<b>没加结尾引导。</b>建议换成「提问收尾」，给读者一个接话的理由。"
+});
+rows.push({
+ok:!/待补/.test(comment),
+html: /待补/.test(comment)
+? "<b>评论区第一条还有「待补」。</b>把链接或关键词换成真的再发，别把占位符发出去。"
+: "<b>评论区第一条可直接用。</b>正文一发，立刻自己贴上，别等。"
+});
+rows.push({
+ok:!/待补/.test(firstLine),
+html: /待补/.test(firstLine)
+? "<b>首行里有「待补」。</b>钩子位置缺料最致命，先把真实数字或结论补上再发。"
+: "<b>首行无待补项。</b>钩子是完整的，可以发。"
+});
+
+$("checks").innerHTML = rows.map(function(r){
+return '<li><span class="ck ' + (r.ok? "ok": "warn") + '">' + (r.ok? "✓": "!") + "</span><span>" + r.html + "</span></li>";
+}).join("");
+}
+
+/* ================= toast ================= */
+var toastTimer = null;
+function toast(msg){
+var el = $("toast");
+el.textContent = msg;
+el.classList.add("show");
+clearTimeout(toastTimer);
+toastTimer = setTimeout(function(){ el.classList.remove("show");}, 2200);
+}
+
+/* ================= 复制 / 下载 ================= */
+function copyText(text, doneMsg){
+function fallback(){
+var ta = document.createElement("textarea");
+ta.value = text;
+ta.style.position = "fixed"; ta.style.opacity = "0";
+document.body.appendChild(ta);
+ta.select();
+try { document.execCommand("copy"); toast(doneMsg);}
+catch(e){ toast("复制失败，请长按文本手动复制");}
+document.body.removeChild(ta);
+}
+if (navigator.clipboard && navigator.clipboard.writeText){
+navigator.clipboard.writeText(text).then(function(){ toast(doneMsg);}, fallback);
+} else { fallback();}
+}
+
+/* ================= 控件 ================= */
+var typeSeg = $("typeSeg");
+Object.keys(PTYPES).forEach(function(key){
+var b = document.createElement("button");
+b.type = "button";
+b.textContent = PTYPES[key].name;
+b.dataset.ptype = key;
+b.setAttribute("aria-pressed", key === state.ptype? "true": "false");
+b.addEventListener("click", function(){
+state.ptype = key;
+typeSeg.querySelectorAll("button").forEach(function(x){
+x.setAttribute("aria-pressed", x.dataset.ptype === key? "true": "false");
+});
+renderHooks();
+});
+typeSeg.appendChild(b);
+});
+var endSel = $("ending");
+Object.keys(ENDINGS).forEach(function(key){
+var o = document.createElement("option");
+o.value = key; o.textContent = ENDINGS[key].name;
+endSel.appendChild(o);
+});
+endSel.value = state.ending;
+
+$("topic").value = state.topic;
+$("fact").value = state.fact;
+$("points").value = state.pointsText;
+
+var debounce = null;
+function scheduleRender(){
+clearTimeout(debounce);
+debounce = setTimeout(renderHooks, 180);
+}
+$("topic").addEventListener("input", function(e){ state.topic = e.target.value; scheduleRender();});
+$("fact").addEventListener("input", function(e){ state.fact = e.target.value; scheduleRender();});
+$("points").addEventListener("input", function(e){ state.pointsText = e.target.value; scheduleRender();});
+endSel.addEventListener("change", function(e){ state.ending = e.target.value; renderHooks();});
+
+$("hooks").addEventListener("click", function(e){
+var cp = e.target.closest("button[data-copy]");
+if (cp){
+e.stopPropagation();
+copyText(state.posts[parseInt(cp.dataset.copy, 10)], "已复制这条，粘贴到 X 就能发");
+return;
+}
+var card = e.target.closest(".hook-card");
+if (!card) return;
+state.selected = parseInt(card.dataset.i, 10);
+renderHooks();
+});
+$("hooks").addEventListener("keydown", function(e){
+if (e.key!== "Enter" && e.key!== " ") return;
+var card = e.target.closest(".hook-card");
+if (!card || e.target.tagName === "BUTTON") return;
+e.preventDefault();
+state.selected = parseInt(card.dataset.i, 10);
+renderHooks();
+});
+
+$("btnRegen").addEventListener("click", function(){
+state.seed += 1;
+renderHooks();
+toast("换了一批句式，内容还是你的原话");
+});
+$("btnCopyPost").addEventListener("click", function(){
+copyText(state.posts[state.selected], "已复制选中帖子，去 X 粘贴发布");
+});
+$("btnCopyComment").addEventListener("click", function(){
+copyText(COMMENTS[state.ptype], "已复制评论区第一条，发完帖立刻贴上");
+});
+$("btnDownload").addEventListener("click", function(){
+var lines = HOOKS.map(function(h, i){
+return "" + h.formula + "\n" + state.posts[i];
+});
+var content = "X 帖子钩子 · 主题：" + (state.topic.trim() || "未命名") +
+"\n类型：" + PTYPES[state.ptype].name + "\n\n" + lines.join("\n\n———\n\n") +
+"\n\n———\n评论区第一条：\n" + COMMENTS[state.ptype] + "\n";
+var blob = new Blob([content], { type: "text/plain;charset=utf-8"});
+var url = URL.createObjectURL(blob);
+var a = document.createElement("a");
+a.href = url; a.download = "X帖子钩子-6条.txt";
+document.body.appendChild(a); a.click(); document.body.removeChild(a);
+setTimeout(function(){ URL.revokeObjectURL(url);}, 800);
+toast("已下载全部 6 条钩子帖");
+});
+
+renderHooks();
+})();
+</script>
+</body>
+</html>

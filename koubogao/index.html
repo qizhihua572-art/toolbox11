@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>口播稿生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+--bg:#f3f1ec;
+--surface:#fffdf8;
+--surface-2:#ece8dd;
+--ink:#1c1a16;
+--muted:#6d675c;
+--line:#ddd6c6;
+--accent:#e8490f;
+--accent-strong:#c93a08;
+--accent-soft:#fbe9df;
+--teal:#0e6e5c;
+--teal-soft:#e0efea;
+--gold:#b07d10;
+--gold-soft:#f5ecd2;
+--shadow:0 1px 2px rgba(28,26,22,.06),0 10px 30px -18px rgba(28,26,22,.35);
+--radius:14px;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#131417;
+--surface:#1b1d21;
+--surface-2:#24262b;
+--ink:#f0ede6;
+--muted:#a49e92;
+--line:#33353b;
+--accent:#ff6a33;
+--accent-strong:#ff8252;
+--accent-soft:#3a2318;
+--teal:#4cc2ab;
+--teal-soft:#17352e;
+--gold:#e0aa3e;
+--gold-soft:#38300f;
+--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -18px rgba(0,0,0,.7);
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+margin:0;background:var(--bg);color:var(--ink);
+font-family:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+line-height:1.6;
+}
+.wrap{max-width:1060px;margin:0 auto;padding:22px 16px 48px}
+/* ---------- header ---------- */
+.kicker{
+display:inline-flex;align-items:center;gap:8px;
+font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);
+text-transform:uppercase;
+}
+.kicker::before{content:"";width:22px;height:2px;background:var(--accent)}
+h1{
+font-family:"Noto Serif SC",serif;font-weight:900;
+font-size:clamp(30px,6vw,44px);line-height:1.15;margin:8px 0 6px;
+}
+.lede{margin:0;color:var(--muted);font-size:15px;max-width:640px}
+.howto{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.howto span{
+font-size:12.5px;font-weight:500;color:var(--muted);
+border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface);
+}
+.howto b{color:var(--accent);font-weight:900;margin-right:4px}
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1fr;gap:18px;margin-top:18px}
+.grid>*{min-width:0}
+.field{min-width:0}
+@media (min-width:880px){.grid{grid-template-columns:400px 1fr;align-items:start}}
+.card{
+background:var(--surface);border:1px solid var(--line);
+border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;
+}
+.card h2{font-size:15px;font-weight:900;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.card h2.no{
+font-size:11px;font-weight:900;color:#fff;background:var(--ink);
+width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+@media (prefers-color-scheme: dark){.card h2.no{background:var(--accent);color:#16130f}}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+.field.hint{font-size:12px;color:var(--muted);margin-top:6px}
+input[type=text],textarea,select{
+width:100%;max-width:100%;min-width:0;font:inherit;font-size:15px;color:var(--ink);
+background:var(--bg);border:1px solid var(--line);border-radius:10px;
+padding:10px 12px;outline:none;
+}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:118px;line-height:1.7}
+select{appearance:none;-webkit-appearance:none;cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* segmented */
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{
+font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;
+border:1px solid var(--line);background:var(--bg);color:var(--ink);
+border-radius:999px;padding:7px 14px;transition:border-color.15s,background.15s,color.15s;
+}
+.seg button:hover{border-color:var(--accent)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+@media (prefers-color-scheme: dark){
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#16130f}
+}
+.seg button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--surface-2);border-radius:10px;padding:10px 12px;text-align:center}
+.stat.v{font-size:22px;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat.v em{font-style:normal;font-size:13px;font-weight:700;color:var(--muted)}
+.stat.k{font-size:11.5px;color:var(--muted);font-weight:500}
+.stat.hot.v{color:var(--accent)}
+/* ---------- output ---------- */
+.out-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.out-head h2{margin:0}
+.verdict{font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--teal-soft);color:var(--teal)}
+.verdict.warn{background:var(--gold-soft);color:var(--gold)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tabs button{
+font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);
+padding:8px 12px;margin-bottom:-1px;
+}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.script{
+background:var(--bg);border:1px solid var(--line);border-radius:12px;
+padding:6px 18px;min-height:280px;
+}
+.seg-line{display:flex;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}
+.seg-line:last-child{border-bottom:none}
+.tag{
+flex:none;width:52px;height:fit-content;text-align:center;
+font-size:11px;font-weight:900;letter-spacing:.05em;
+border-radius:6px;padding:3px 0;margin-top:5px;
+}
+.tag.hook{background:var(--accent);color:#fff}
+.tag.body{background:var(--surface-2);color:var(--muted)}
+.tag.point{background:var(--teal-soft);color:var(--teal)}
+.tag.turn{background:var(--gold-soft);color:var(--gold)}
+.tag.close{background:var(--ink);color:var(--bg)}
+@media (prefers-color-scheme: dark){.tag.close{background:var(--accent);color:#16130f}}
+.seg-text{font-size:16.5px;line-height:1.85;margin:0;min-width:0;overflow-wrap:anywhere}
+.seg-line[data-type="hook"].seg-text{font-weight:700;font-size:17.5px}
+.empty{padding:40px 10px;text-align:center;color:var(--muted);font-size:14.5px}
+/* ---------- actions ---------- */
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{
+font:inherit;font-size:14px;font-weight:700;cursor:pointer;
+border-radius:10px;padding:11px 18px;border:1px solid var(--line);
+background:var(--surface);color:var(--ink);transition:transform.1s,background.15s,border-color.15s;
+}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.grow{flex:1 1 auto}
+.note{font-size:12.5px;color:var(--muted);margin-top:14px}
+.note b{color:var(--ink)}
+/* toast */
+.toast{
+position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+background:var(--ink);color:var(--bg);font-size:14px;font-weight:700;
+padding:11px 22px;border-radius:999px;opacity:0;pointer-events:none;
+transition:opacity.25s,transform.25s;z-index:60;box-shadow:var(--shadow);
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+/* ---------- teleprompter ---------- */
+.tp{
+position:fixed;inset:0;z-index:50;background:#0a0a0b;color:#f5f2ea;
+display:flex;flex-direction:column;
+}
+.tp[hidden]{display:none}
+.tp-bar{
+display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+padding:12px 14px;border-bottom:1px solid #2c2c2e;background:#121214;
+}
+.tp-bar.tp-title{font-size:13px;font-weight:900;letter-spacing:.1em;color:#ff6a33;margin-right:2px}
+.tp-btn{
+font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+background:#222224;color:#f5f2ea;border:1px solid #3a3a3d;border-radius:9px;padding:8px 14px;
+}
+.tp-btn.main{background:#e8490f;border-color:#e8490f;color:#fff;min-width:92px}
+.tp-btn[aria-pressed="true"]{background:#f5f2ea;color:#111;border-color:#f5f2ea}
+.tp-ctl{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#b9b4a8}
+.tp-ctl input[type=range]{width:110px;accent-color:#e8490f}
+.tp-btn:focus-visible,.tp-ctl input:focus-visible{outline:2px solid #ff6a33;outline-offset:2px}
+.tp-stage{position:relative;flex:1;overflow:hidden}
+.tp-guide{
+position:absolute;left:0;right:0;top:38%;height:0;
+border-top:1px dashed rgba(255,106,51,.55);pointer-events:none;
+}
+.tp-guide::after{
+content:"读到这行";position:absolute;right:10px;top:-22px;
+font-size:11px;color:#ff6a33;letter-spacing:.08em;
+}
+.tp-scroll{position:absolute;left:0;right:0;top:0;will-change:transform}
+.tp-inner{max-width:820px;margin:0 auto;padding:0 22px}
+.tp-inner p{margin:0 0.9em;line-height:1.75;font-weight:500}
+.tp-inner p.hook{font-weight:900;color:#ffb59a}
+.tp-foot{
+padding:9px 14px;font-size:12px;color:#8f8a7e;background:#121214;border-top:1px solid #2c2c2e;
+display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+@media (prefers-reduced-motion: reduce){
+.btn,.toast{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="kicker">Q工坊工具箱 · 第 2 件</span>
+<h1>口播稿生成器</h1>
+<p class="lede">填主题、贴要点，选个结构，立刻拼出一篇能直接念的口播稿——开头有钩子、中间有节奏、结尾有引导。写完打开提词器，架起手机就能录。</p>
+<div class="howto" aria-hidden="true">
+<span><b>1</b>填主题和要点</span>
+<span><b>2</b>选风格结构</span>
+<span><b>3</b>挑一版，进提词器开录</span>
+</div>
+
+<div class="grid">
+<!-- ============ 控制面板 ============ -->
+<section class="card" aria-label="稿件设置">
+<h2><span class="no">1</span>写点什么</h2>
+
+<div class="field">
+<label for="topic">主题（一句话说清这条视频讲什么）</label>
+<input type="text" id="topic" autocomplete="off" />
+</div>
+
+<div class="field">
+<label for="points">要点（你想讲的话，一行一条）</label>
+<textarea id="points" spellcheck="false"></textarea>
+<p class="hint">要点是你自己的真实内容，生成器负责把它们排成口播的节奏：钩子 → 展开 → 收尾。</p>
+</div>
+
+<div class="field">
+<label>风格结构</label>
+<div class="seg" id="styleSeg" role="group" aria-label="风格结构"></div>
+</div>
+
+<div class="row2">
+<div class="field">
+<label for="platform">发布平台</label>
+<select id="platform"></select>
+</div>
+<div class="field">
+<label for="duration">目标时长</label>
+<select id="duration"></select>
+</div>
+</div>
+
+<div class="field">
+<label for="rate">你的语速</label>
+<select id="rate">
+<option value="240">慢速 · 约 240 字/分钟</option>
+<option value="270" selected>标准 · 约 270 字/分钟</option>
+<option value="300">快速 · 约 300 字/分钟</option>
+</select>
+</div>
+</section>
+
+<!-- ============ 输出面板 ============ -->
+<section class="card" aria-label="生成的口播稿">
+<div class="out-head">
+<h2><span class="no">2</span>成稿</h2>
+<span class="verdict" id="verdict"></span>
+</div>
+
+<div class="stats" aria-label="稿件数据">
+<div class="stat"><div class="v" id="statChars">0</div><div class="k">总字数</div></div>
+<div class="stat hot"><div class="v" id="statTime">0<em>秒</em></div><div class="k">预计口播时长</div></div>
+<div class="stat"><div class="v" id="statTarget">0<em>字</em></div><div class="k">目标字数（按时长）</div></div>
+</div>
+
+<div class="tabs" id="tabs" role="tablist" aria-label="稿件版本"></div>
+<div class="script" id="scriptOut" aria-live="polite"></div>
+
+<div class="actions">
+<button class="btn primary grow" id="btnPrompter" type="button">打开提词器</button>
+<button class="btn" id="btnCopy" type="button">复制全文</button>
+<button class="btn" id="btnDownload" type="button">下载.txt</button>
+<button class="btn" id="btnRegen" type="button">换一批钩子</button>
+</div>
+
+<p class="note"><b>上手前改两处：</b>把稿子里带「待补」标记的地方换成你的具体说法；念第一遍觉得拗口的句子，直接按你平时说话的习惯改——口播稿的标准只有一个，就是你念着顺。</p>
+</section>
+</div>
+</div>
+
+<!-- ============ 提词器 ============ -->
+<div class="tp" id="prompter" hidden role="dialog" aria-label="提词器">
+<div class="tp-bar">
+<span class="tp-title">提词器</span>
+<button class="tp-btn main" id="tpPlay" type="button">▶ 开始滚动</button>
+<button class="tp-btn" id="tpRestart" type="button">回到开头</button>
+<label class="tp-ctl">速度 <input type="range" id="tpSpeed" min="20" max="160" step="5" value="55" /></label>
+<label class="tp-ctl">字号 <input type="range" id="tpSize" min="24" max="64" step="2" value="38" /></label>
+<button class="tp-btn" id="tpMirror" type="button" aria-pressed="false">镜像翻转</button>
+<button class="tp-btn" id="tpClose" type="button">退出 ✕</button>
+</div>
+<div class="tp-stage" id="tpStage">
+<div class="tp-guide"></div>
+<div class="tp-scroll" id="tpScroll"><div class="tp-inner" id="tpInner"></div></div>
+</div>
+<div class="tp-foot">
+<span>空格：开始 / 暂停 · Esc：退出</span>
+<span id="tpMeta"></span>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id);};
+
+/* ================= 模板库 =================
+诚实边界：本工具只做三件事——钩子句式、段落编排、平台收尾。
+具体内容全部来自用户填的要点；不够长时只给可填的引导句，绝不编造事实。 */
+
+function stripEnd(s){ return s.replace(/[。！？!?；;，,、\s]+$/,"");}
+function withEnd(s){ return /[。！？!?]$/.test(s)? s: s + "。";}
+function firstPoint(P, fb){ return P.length? stripEnd(P[0]): fb;}
+function pointAt(P, i, fb){ return P.length > i? stripEnd(P[i]): fb;}
+
+var STYLES = {
+record: {
+name: "项目记录",
+hooks: [
+function(T,P){ return "今天这个项目，做成了：第一件事就是——" + firstPoint(P,T) + "。";},
+function(T,P){ return "先把结论放前面：这件事，跑通了。";},
+function(T,P){ return "折腾了一整天，" + firstPoint(P,T) + "，全程记录，都在这条里。";},
+function(T,P){ return "不会写代码的人，今天又往前走了一步：" + firstPoint(P,T) + "。";},
+function(T,P){ return "说出来你可能不信，今天我只动嘴没动手，就把这件事干完了。";}
+],
+open: "先交代背景：{T}。这是我正在推进的项目，今天把进展完整同步给你。",
+heads: ["先说结果，", "具体是这样，", "接着往下，", "还有一步，", "最后，"],
+turn: "中间有个地方，卡了我很久。",
+wrap: "今天就推进到这里。做项目就是这样，不怕慢，一天往前挪一步，九十天后回头看，就是一条完整的路。",
+extra: "这一步我用到的具体做法是：「待补：你具体怎么操作的，或用了什么工具」。"
+},
+teach: {
+name: "干货教学",
+hooks: [
+function(T,P){ return "很多人做不好{T}，不是不努力，是第一步就错了。";},
+function(T,P){ return "{T}，记住这第一点就够了：" + firstPoint(P,"「待补：你的核心要点」") + "。";},
+function(T,P){ return "别再到处找教程了，{T}这一条视频讲透。";},
+function(T,P){ return "新手做{T}最容易踩的坑，今天一次说清。";},
+function(T,P){ return "花一分钟，学会{T}，后面能省你十个小时。";}
+],
+open: "今天不讲虚的，直接上步骤，你照着做就行。",
+heads: ["第一，", "第二，", "第三，", "第四，", "第五，", "第六，"],
+turn: "这里提醒一句，「待补：最容易踩的坑」。",
+wrap: "总结一下，{T}核心就这几步，关键是动手去做一遍。先收藏，下次做的时候打开对着走一遍。",
+extra: "举我自己的例子：「待补：你亲身的例子或具体数字」。"
+},
+opinion: {
+name: "观点输出",
+hooks: [
+function(T,P){ return "先说我的观点：" + firstPoint(P,"「待补：把你的结论放这里，一句说完」") + "。不认同的，看完再喷。";},
+function(T,P){ return "关于{T}，我有个不太讨喜的看法，今天说透。";},
+function(T,P){ return "这件事大家都在夸，我偏要泼盆冷水。";},
+function(T,P){ return "别被带节奏了，{T}根本不是他们说的那样。";},
+function(T,P){ return "一句话得罪人：「待补：你的犀利结论」。但我说的是实话。";}
+],
+open: "为什么我这么判断？给你三个理由。",
+heads: ["第一，", "第二，", "第三，", "再补一点，", "最后，"],
+turn: "肯定有人要反驳，说「待补：反对者最常见的说法」。我的回答是：「待补：你的回应」。",
+wrap: "观点就摆在这，认不认同，你说了算。评论区留下你的立场，我想看看有多少人站我这边。",
+extra: "再说一个事实支撑：「待补：数据或事实，记得带出处」。"
+},
+story: {
+name: "故事复盘",
+hooks: [
+function(T,P){ return "先说结局：" + pointAt(P, P.length-1, "「待补：先把结果或悬念放这里」") + "。但过程，远比你想的曲折。";},
+function(T,P){ return "这件事过去之后，我想了很久，今天完整复盘一次。";},
+function(T,P){ return "如果能重来一次，我打死也不会「待补：你当时最错的那一步」。";},
+function(T,P){ return "那天发生的事，我到现在都记得清清楚楚。";},
+function(T,P){ return "一个真实教训，换来的代价是「待补：你付出的代价」，说出来给你们避坑。";}
+],
+open: "事情是这样的：{T}。我从头讲，你慢慢听。",
+heads: ["一开始，", "接着，", "没想到，", "转折来了，", "最后，", "后来，"],
+turn: "就在我以为要黄的时候，转机出现了。",
+wrap: "复盘下来，这件事教会我最重要的一课：「待补：你的一句总结」。共勉。",
+extra: "当时还有个细节我印象特别深：「待补：一个具体细节」。"
+},
+recommend: {
+name: "好物推荐",
+hooks: [
+function(T,P){ return "用了两周，我把「待补：同类旧产品」直接闲置了。";},
+function(T,P){ return "不是广告，自己掏钱买的，好用才敢拿出来说。";},
+function(T,P){ return "{T}，到底值不值？先看第一个让我心动的点。";},
+function(T,P){ return "如果你也受够了「待补：目标人群的痛点」，这个真的可以试试。";},
+function(T,P){ return "先说价格：「待补：价格或优惠信息」。再说它凭什么值这个价。";}
+],
+open: "先说清楚我的情况：「待补：你的身份或使用场景」，所以我的感受你可以参考。",
+heads: ["先看第一个，", "第二个打动我的是，", "第三个，", "另外还有个细节，", "最后说说缺点，"],
+turn: "但丑话说前面，它有个缺点：「待补：真实缺点」，介意的别买。",
+wrap: "总结：适合「待补：目标人群」入手，不适合「待补：不适合的人群」。链接放好了，需要的自取，别冲动消费。",
+extra: "我一般的使用场景是：「待补：你的真实使用场景」。"
+}
+};
+
+var PLATFORMS = {
+douyin: { name:"抖音", cta:"觉得有用就点个关注，下一条我接着往下做。评论区留下你的问题，我挑着答。"},
+shipinhao: { name:"视频号", cta:"觉得这条对你有启发，就点个赞、转发给身边的朋友。关注我，一起往下看。"},
+bilibili: { name:"B站", cta:"觉得有帮助的话，一键三连支持一下。下一期做什么，你在评论区说了算。"},
+xiaohongshu:{ name:"小红书", cta:"先收藏起来，别划走就找不到了。评论区告诉我，你想看哪方面的内容。"}
+};
+
+var DURATIONS = [30, 60, 90, 120, 180];
+
+/* ================= 状态与默认值 ================= */
+var DEFAULTS = {
+topic: "我不会写代码，用 AI 做了一个口播稿生成器",
+points: [
+"这是我 AI 工具矩阵里的第 2 个工具",
+"做博主最卡的一步，就是对着空白文档写稿",
+"这个工具填个主题、贴上要点，就能拼出一篇能直接念的稿子",
+"还自带提词器，写完架起手机就能录",
+"全程没写一行代码，都是跟 AI 一句句聊出来的"
+].join("\n"),
+style: "record",
+platform: "douyin",
+duration: 60,
+rate: 270
+};
+
+var state = {
+topic: DEFAULTS.topic,
+pointsText: DEFAULTS.points,
+style: DEFAULTS.style,
+platform: DEFAULTS.platform,
+duration: DEFAULTS.duration,
+rate: DEFAULTS.rate,
+hookSeed: 0,
+tab: 0,
+versions: []
+};
+
+/* ================= 生成逻辑 ================= */
+function parsePoints(){
+return state.pointsText.split(/\n+/).map(function(s){ return s.trim();}).filter(Boolean);
+}
+function countChars(s){ return s.replace(/\s/g,"").length;}
+
+function buildVersion(v){
+var st = STYLES[state.style];
+var T = state.topic.trim() || "「待补：主题」";
+var P = parsePoints();
+var cta = PLATFORMS[state.platform].cta;
+var segs = [];
+var hi = (state.hookSeed * 3 + v) % st.hooks.length;
+
+segs.push({ type:"hook", label:"钩子", text: st.hooks[hi](T, P).split("{T}").join(T) });
+segs.push({ type:"body", label:"开场", text: st.open.split("{T}").join(T)});
+
+if (P.length === 0){
+segs.push({ type:"point", label:"要点", text:"「待补：在左边一行一条写下你想讲的要点，这里会自动排成口播顺序」"});
+} else {
+P.forEach(function(p, i){
+if (i === 2 && P.length >= 3){
+segs.push({ type:"turn", label:"转折", text: st.turn});
+}
+var head = st.heads[Math.min(i, st.heads.length - 1)];
+segs.push({ type:"point", label:"要点 " + (i+1), text: head + withEnd(p)});
+});
+}
+
+var wrapText = st.wrap.split("{T}").join(T);
+segs.push({ type:"close", label:"收尾", text: wrapText + cta});
+
+/* 时长补位：明显太短时，插入一条引导句提示补料，而不是编造内容 */
+var target = Math.round(state.duration * state.rate / 60);
+var total = segs.reduce(function(n,s){ return n + countChars(s.text);}, 0);
+if (P.length > 0 && total < target * 0.75){
+segs.splice(segs.length - 1, 0, { type:"body", label:"补料", text: st.extra});
+total += countChars(st.extra);
+}
+return { segs: segs, chars: total};
+}
+
+function generate(){
+state.versions = [buildVersion(0), buildVersion(1), buildVersion(2)];
+if (state.tab > 2) state.tab = 0;
+}
+
+/* ================= 渲染 ================= */
+var LABELS = { hook:"钩子", body:"铺垫", point:"要点", turn:"转折", close:"收尾"};
+
+function targetChars(){ return Math.round(state.duration * state.rate / 60);}
+function fmtTime(sec){
+sec = Math.round(sec);
+if (sec < 60) return { n: sec, u: "秒"};
+return { n: Math.floor(sec/60) + ":" + String(sec % 60).padStart(2,"0"), u: "分:秒"};
+}
+
+function renderTabs(){
+var names = ["版本 A · 稳重", "版本 B · 换个钩子", "版本 C · 再换个钩子"];
+$("tabs").innerHTML = names.map(function(n, i){
+return '<button type="button" role="tab" data-tab="' + i + '" aria-selected="' + (i === state.tab) + '">' + n + "</button>";
+}).join("");
+}
+
+function render(){
+generate();
+renderTabs();
+var ver = state.versions[state.tab];
+var out = $("scriptOut");
+
+if (!ver){
+out.innerHTML = '<div class="empty">先在左边填上主题和要点。</div>';
+return;
+}
+out.innerHTML = ver.segs.map(function(s){
+var label = s.label || LABELS[s.type] || "";
+return '<div class="seg-line" data-type="' + s.type + '">' +
+'<span class="tag ' + s.type + '">' + label + "</span>" +
+'<p class="seg-text"></p>' +
+"</div>";
+}).join("");
+/* 用 textContent 填正文，避免用户输入被当成 HTML */
+var lines = out.querySelectorAll(".seg-text");
+ver.segs.forEach(function(s, i){ lines[i].textContent = s.text;});
+
+var tgt = targetChars();
+$("statChars").textContent = ver.chars;
+var t = fmtTime(ver.chars / state.rate * 60);
+$("statTime").innerHTML = "";
+$("statTime").appendChild(document.createTextNode(t.n));
+var em = document.createElement("em"); em.textContent = t.u; $("statTime").appendChild(em);
+$("statTarget").innerHTML = "";
+$("statTarget").appendChild(document.createTextNode(tgt));
+var em2 = document.createElement("em"); em2.textContent = "字"; $("statTarget").appendChild(em2);
+
+var verdict = $("verdict");
+var ratio = tgt? ver.chars / tgt: 1;
+verdict.classList.remove("warn");
+var diff = ver.chars - tgt;
+if (ratio < 0.7){ verdict.textContent = "偏短 · 还差约 " + (-diff) + " 字，加 1–2 条要点，或选更短的时长"; verdict.classList.add("warn");}
+else if (ratio > 1.2){ verdict.textContent = "偏长 · 建议删约 " + diff + " 字，录的时候不用赶"; verdict.classList.add("warn");}
+else { verdict.textContent = "长度正合适 · 可以直接开录";}
+}
+
+function currentPlainText(){
+var ver = state.versions[state.tab];
+if (!ver) return "";
+return ver.segs.map(function(s){ return s.text;}).join("\n");
+}
+
+/* ================= toast ================= */
+var toastTimer = null;
+function toast(msg){
+var el = $("toast");
+el.textContent = msg;
+el.classList.add("show");
+clearTimeout(toastTimer);
+toastTimer = setTimeout(function(){ el.classList.remove("show");}, 2200);
+}
+
+/* ================= 输入控件 ================= */
+/* 风格分段按钮 */
+var styleSeg = $("styleSeg");
+Object.keys(STYLES).forEach(function(key){
+var b = document.createElement("button");
+b.type = "button";
+b.textContent = STYLES[key].name;
+b.dataset.style = key;
+b.setAttribute("aria-pressed", key === state.style? "true": "false");
+b.addEventListener("click", function(){
+state.style = key; state.tab = 0;
+styleSeg.querySelectorAll("button").forEach(function(x){
+x.setAttribute("aria-pressed", x.dataset.style === key? "true": "false");
+});
+render();
+});
+styleSeg.appendChild(b);
+});
+/* 平台、时长下拉 */
+var platSel = $("platform");
+Object.keys(PLATFORMS).forEach(function(key){
+var o = document.createElement("option");
+o.value = key; o.textContent = PLATFORMS[key].name;
+platSel.appendChild(o);
+});
+platSel.value = state.platform;
+var durSel = $("duration");
+DURATIONS.forEach(function(d){
+var o = document.createElement("option");
+o.value = d; o.textContent = d < 60? d + " 秒": (d/60) + " 分钟";
+durSel.appendChild(o);
+});
+durSel.value = String(state.duration);
+
+/* 初始化输入框 */
+$("topic").value = state.topic;
+$("points").value = state.pointsText;
+$("rate").value = String(state.rate);
+
+var debounce = null;
+function scheduleRender(){
+clearTimeout(debounce);
+debounce = setTimeout(render, 180);
+}
+$("topic").addEventListener("input", function(e){ state.topic = e.target.value; scheduleRender();});
+$("points").addEventListener("input", function(e){ state.pointsText = e.target.value; scheduleRender();});
+platSel.addEventListener("change", function(e){ state.platform = e.target.value; render();});
+durSel.addEventListener("change", function(e){ state.duration = parseInt(e.target.value, 10); render();});
+$("rate").addEventListener("change", function(e){ state.rate = parseInt(e.target.value, 10); render();});
+
+$("tabs").addEventListener("click", function(e){
+var b = e.target.closest("button[data-tab]");
+if (!b) return;
+state.tab = parseInt(b.dataset.tab, 10);
+render();
+});
+
+$("btnRegen").addEventListener("click", function(){
+state.hookSeed += 1; state.tab = 0; render();
+toast("换了一批钩子");
+});
+
+/* ================= 复制 / 下载 ================= */
+function copyText(text, doneMsg){
+function fallback(){
+var ta = document.createElement("textarea");
+ta.value = text;
+ta.style.position = "fixed"; ta.style.opacity = "0";
+document.body.appendChild(ta);
+ta.select();
+try { document.execCommand("copy"); toast(doneMsg);}
+catch(e){ toast("复制失败，请长按稿件手动复制");}
+document.body.removeChild(ta);
+}
+if (navigator.clipboard && navigator.clipboard.writeText){
+navigator.clipboard.writeText(text).then(function(){ toast(doneMsg);}, fallback);
+} else { fallback();}
+}
+
+$("btnCopy").addEventListener("click", function(){
+var text = currentPlainText();
+if (!text){ toast("还没有稿子可复制"); return;}
+copyText("\n\n" + text, "已复制全文，去粘贴到备忘录或剪辑软件吧");
+});
+
+$("btnDownload").addEventListener("click", function(){
+var text = currentPlainText();
+if (!text){ toast("还没有稿子可下载"); return;}
+var title = (state.topic.trim() || "口播稿").replace(/[\\/:*?"<>|\n]/g, "").slice(0, 24);
+var content = "口播稿：" + (state.topic.trim() || "未命名") + "\n" +
+"风格：" + STYLES[state.style].name + " · 平台：" + PLATFORMS[state.platform].name +
+" · 目标时长：" + (state.duration < 60? state.duration + "秒": (state.duration/60) + "分钟") + "\n\n" + text + "\n";
+var blob = new Blob([content], { type: "text/plain;charset=utf-8"});
+var url = URL.createObjectURL(blob);
+var a = document.createElement("a");
+a.href = url; a.download = "口播稿-" + title + ".txt";
+document.body.appendChild(a); a.click(); document.body.removeChild(a);
+setTimeout(function(){ URL.revokeObjectURL(url);}, 800);
+toast("已下载.txt 文件");
+});
+
+/* ================= 提词器 ================= */
+var tp = {
+open: false, playing: false, y: 0, raf: 0, lastTs: 0,
+speed: 55, size: 38, mirror: false
+};
+var prompter = $("prompter"), tpScroll = $("tpScroll"),
+tpInner = $("tpInner"), tpStage = $("tpStage"), tpPlay = $("tpPlay");
+
+function tpMaxY(){ return Math.max(0, tpScroll.scrollHeight - tpStage.clientHeight * 0.45);}
+function tpApply(){
+tpScroll.style.transform = "translateY(" + (-tp.y) + "px)" + (tp.mirror? " scaleX(-1)": "");
+}
+function tpSetPlayUI(){
+tpPlay.textContent = tp.playing? "❚❚ 暂停": "▶ 开始滚动";
+}
+function tpStep(ts){
+if (!tp.playing) return;
+if (!tp.lastTs) tp.lastTs = ts;
+var dt = Math.min(64, ts - tp.lastTs);
+tp.lastTs = ts;
+tp.y += tp.speed * dt / 1000;
+if (tp.y >= tpMaxY()){
+tp.y = tpMaxY();
+tp.playing = false;
+tpSetPlayUI();
+tpApply();
+return;
+}
+tpApply();
+tp.raf = requestAnimationFrame(tpStep);
+}
+function tpPlayToggle(){
+if (!tp.playing && tp.y >= tpMaxY()) tp.y = 0;
+tp.playing =!tp.playing;
+tp.lastTs = 0;
+tpSetPlayUI();
+if (tp.playing){ tp.raf = requestAnimationFrame(tpStep);}
+else { cancelAnimationFrame(tp.raf);}
+tpApply();
+}
+function openPrompter(){
+var ver = state.versions[state.tab];
+if (!ver ||!ver.segs.length){ toast("先生成一版稿子再进提词器"); return;}
+tpInner.innerHTML = "";
+ver.segs.forEach(function(s){
+var p = document.createElement("p");
+if (s.type === "hook") p.className = "hook";
+p.textContent = s.text;
+tpInner.appendChild(p);
+});
+tpInner.style.fontSize = tp.size + "px";
+var t = fmtTime(ver.chars / state.rate * 60);
+$("tpMeta").textContent = STYLES[state.style].name + " · " + PLATFORMS[state.platform].name +
+" · 约 " + ver.chars + " 字 · 预计 " + t.n + t.u;
+prompter.hidden = false;
+tp.open = true; tp.playing = false; tp.y = 0;
+tpSetPlayUI();
+/* 等布局完成后再定位：先把稿子推到导读线附近 */
+requestAnimationFrame(function(){
+tp.y = 0;
+tpScroll.style.transform = "";
+tpInner.style.paddingTop = Math.round(tpStage.clientHeight * 0.38) + "px";
+tpInner.style.paddingBottom = Math.round(tpStage.clientHeight * 0.6) + "px";
+tpApply();
+});
+document.body.style.overflow = "hidden";
+}
+function closePrompter(){
+prompter.hidden = true;
+tp.open = false; tp.playing = false;
+cancelAnimationFrame(tp.raf);
+document.body.style.overflow = "";
+}
+
+$("btnPrompter").addEventListener("click", openPrompter);
+$("tpClose").addEventListener("click", closePrompter);
+tpPlay.addEventListener("click", tpPlayToggle);
+$("tpRestart").addEventListener("click", function(){
+tp.y = 0; tp.lastTs = 0; tpApply();
+});
+$("tpSpeed").addEventListener("input", function(e){ tp.speed = parseInt(e.target.value, 10);});
+$("tpSize").addEventListener("input", function(e){
+tp.size = parseInt(e.target.value, 10);
+tpInner.style.fontSize = tp.size + "px";
+});
+$("tpMirror").addEventListener("click", function(){
+tp.mirror =!tp.mirror;
+this.setAttribute("aria-pressed", tp.mirror? "true": "false");
+tpApply();
+});
+document.addEventListener("keydown", function(e){
+if (!tp.open) return;
+if (e.key === "Escape"){ closePrompter();}
+else if (e.key === " " &&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){
+e.preventDefault(); tpPlayToggle();
+}
+});
+
+render();
+})();
+</script>
+</body>
+</html>
